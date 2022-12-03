@@ -46,7 +46,10 @@ information. The canonical call looks like this:
 		return stacktrace.NewError("Expected %v to be okay", arg)
 	}
 */
-func NewError(msg string, depth int, vals ...interface{}) error {
+func NewError(msg string, vals ...interface{}) error {
+	return create(nil, 0, NoCode, msg, vals...)
+}
+func NewErrorWithDepth(msg string, depth int, vals ...interface{}) error {
 	return create(nil, depth, NoCode, msg, vals...)
 }
 
@@ -81,7 +84,14 @@ included in an error, msg can be an empty string:
 If cause is nil, Propagate returns nil. This allows elision of some "if err !=
 nil" checks.
 */
-func Propagate(cause error, depth int, msg string, vals ...interface{}) error {
+func Propagate(cause error, msg string, vals ...interface{}) error {
+	if cause == nil {
+		// Allow calling Propagate without checking whether there is error
+		return nil
+	}
+	return create(cause, 0, NoCode, msg, vals...)
+}
+func PropagateWithDepth(cause error, depth int, msg string, vals ...interface{}) error {
 	if cause == nil {
 		// Allow calling Propagate without checking whether there is error
 		return nil
@@ -117,7 +127,10 @@ const NoCode ErrorCode = math.MaxUint16
 /*
 NewErrorWithCode is similar to NewError but also attaches an error code.
 */
-func NewErrorWithCode(code ErrorCode, depth int, msg string, vals ...interface{}) error {
+func NewErrorWithCode(code ErrorCode, msg string, vals ...interface{}) error {
+	return create(nil, 0, code, msg, vals...)
+}
+func NewErrorWithCodeAndDepth(code ErrorCode, depth int, msg string, vals ...interface{}) error {
 	return create(nil, depth, code, msg, vals...)
 }
 
@@ -129,7 +142,14 @@ PropagateWithCode is similar to Propagate but also attaches an error code.
 		return stacktrace.PropagateWithCode(err, EcodeManifestNotFound, "")
 	}
 */
-func PropagateWithCode(cause error, depth int, code ErrorCode, msg string, vals ...interface{}) error {
+func PropagateWithCode(cause error, code ErrorCode, msg string, vals ...interface{}) error {
+	if cause == nil {
+		// Allow calling PropagateWithCode without checking whether there is error
+		return nil
+	}
+	return create(cause, 0, code, msg, vals...)
+}
+func PropagateWithCodeAndDepth(cause error, depth int, code ErrorCode, msg string, vals ...interface{}) error {
 	if cause == nil {
 		// Allow calling PropagateWithCode without checking whether there is error
 		return nil
