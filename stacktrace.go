@@ -46,8 +46,8 @@ information. The canonical call looks like this:
 		return stacktrace.NewError("Expected %v to be okay", arg)
 	}
 */
-func NewError(msg string, vals ...interface{}) error {
-	return create(nil, NoCode, msg, vals...)
+func NewError(msg string, depth int, vals ...interface{}) error {
+	return create(nil, depth, NoCode, msg, vals...)
 }
 
 /*
@@ -81,12 +81,12 @@ included in an error, msg can be an empty string:
 If cause is nil, Propagate returns nil. This allows elision of some "if err !=
 nil" checks.
 */
-func Propagate(cause error, msg string, vals ...interface{}) error {
+func Propagate(cause error, depth int, msg string, vals ...interface{}) error {
 	if cause == nil {
 		// Allow calling Propagate without checking whether there is error
 		return nil
 	}
-	return create(cause, NoCode, msg, vals...)
+	return create(cause, depth, NoCode, msg, vals...)
 }
 
 /*
@@ -117,8 +117,8 @@ const NoCode ErrorCode = math.MaxUint16
 /*
 NewErrorWithCode is similar to NewError but also attaches an error code.
 */
-func NewErrorWithCode(code ErrorCode, msg string, vals ...interface{}) error {
-	return create(nil, code, msg, vals...)
+func NewErrorWithCode(code ErrorCode, depth int, msg string, vals ...interface{}) error {
+	return create(nil, depth, code, msg, vals...)
 }
 
 /*
@@ -129,12 +129,12 @@ PropagateWithCode is similar to Propagate but also attaches an error code.
 		return stacktrace.PropagateWithCode(err, EcodeManifestNotFound, "")
 	}
 */
-func PropagateWithCode(cause error, code ErrorCode, msg string, vals ...interface{}) error {
+func PropagateWithCode(cause error, depth int, code ErrorCode, msg string, vals ...interface{}) error {
 	if cause == nil {
 		// Allow calling PropagateWithCode without checking whether there is error
 		return nil
 	}
-	return create(cause, code, msg, vals...)
+	return create(cause, depth, code, msg, vals...)
 }
 
 /*
@@ -185,7 +185,7 @@ type stacktrace struct {
 	line     int
 }
 
-func create(cause error, code ErrorCode, msg string, vals ...interface{}) error {
+func create(cause error, depth int, code ErrorCode, msg string, vals ...interface{}) error {
 	// If no error code specified, inherit error code from the cause.
 	if code == NoCode {
 		code = GetCode(cause)
@@ -198,7 +198,7 @@ func create(cause error, code ErrorCode, msg string, vals ...interface{}) error 
 	}
 
 	// Caller of create is NewError or Propagate, so user's code is 2 up.
-	pc, file, line, ok := runtime.Caller(2)
+	pc, file, line, ok := runtime.Caller(depth + 2)
 	if !ok {
 		return err
 	}
