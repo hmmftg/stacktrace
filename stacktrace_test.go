@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/palantir/stacktrace"
+	"github.com/hmmftg/stacktrace"
 )
 
 func TestMessage(t *testing.T) {
@@ -36,15 +36,15 @@ func TestMessage(t *testing.T) {
 
 	expected := strings.Join([]string{
 		"so closed",
-		" --- at github.com/palantir/stacktrace/functions_for_test.go:51 (doClosure.func1) ---",
+		" --- at github.com/hmmftg/stacktrace/functions_for_test.go:51 (doClosure.func1) ---",
 		"Caused by: pointedly",
-		" --- at github.com/palantir/stacktrace/functions_for_test.go:46 (ptrObj.doPtr) ---",
-		" --- at github.com/palantir/stacktrace/functions_for_test.go:42 (privateObj.doPrivate) ---",
-		" --- at github.com/palantir/stacktrace/functions_for_test.go:38 (privateObj.DoPublic) ---",
-		" --- at github.com/palantir/stacktrace/functions_for_test.go:34 (PublicObj.doPrivate) ---",
-		" --- at github.com/palantir/stacktrace/functions_for_test.go:30 (PublicObj.DoPublic) ---",
+		" --- at github.com/hmmftg/stacktrace/functions_for_test.go:46 (ptrObj.doPtr) ---",
+		" --- at github.com/hmmftg/stacktrace/functions_for_test.go:42 (privateObj.doPrivate) ---",
+		" --- at github.com/hmmftg/stacktrace/functions_for_test.go:38 (privateObj.DoPublic) ---",
+		" --- at github.com/hmmftg/stacktrace/functions_for_test.go:34 (PublicObj.doPrivate) ---",
+		" --- at github.com/hmmftg/stacktrace/functions_for_test.go:30 (PublicObj.DoPublic) ---",
 		"Caused by: failed to start doing",
-		" --- at github.com/palantir/stacktrace/functions_for_test.go:26 (startDoing) ---",
+		" --- at github.com/hmmftg/stacktrace/functions_for_test.go:26 (startDoing) ---",
 	}, "\n")
 	stacktrace.DefaultFormat = stacktrace.FormatFull
 	assert.Equal(t, expected, err.Error())
@@ -97,4 +97,35 @@ func TestPropagateNil(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, stacktrace.NoCode, stacktrace.GetCode(err))
+}
+
+func Depth3(t *testing.T, err error) {
+	err3 := stacktrace.PropagateWithDepth(err, 3, "")
+	t.Log(err3)
+}
+
+func Depth2(t *testing.T, err error) {
+	err2 := stacktrace.PropagateWithDepth(err, 2, "")
+	t.Log(err2)
+	Depth3(t, err)
+}
+
+func Depth1(t *testing.T, err error) {
+	err1 := stacktrace.PropagateWithDepth(err, 1, "")
+	t.Log(err1)
+	Depth2(t, err)
+}
+
+func TestPropagateDepth(t *testing.T) {
+	var err error
+
+	err = stacktrace.Propagate(err, "")
+	assert.Nil(t, err)
+
+	err = stacktrace.PropagateWithCode(err, EcodeNotImplemented, "")
+	assert.Nil(t, err)
+
+	assert.Equal(t, stacktrace.NoCode, stacktrace.GetCode(err))
+
+	Depth1(t, fmt.Errorf("new error"))
 }
